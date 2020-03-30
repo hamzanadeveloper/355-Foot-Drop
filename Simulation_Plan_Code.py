@@ -12,6 +12,8 @@ Umax = 0.04
 Arel = 0.41
 Brel = 5.2
 stim_index = 0
+sloplin = 200
+Fasympt = 1.5
 
 # This is temporary, eventually we'll need to design a sophisticated stim profile.
 stim_profile = np.zeros(500)
@@ -56,7 +58,9 @@ def Vcerel(q, Lm):
     """
     Need: P1, P2, P3, FceRel, q, Vfact,
     """
-
+    #Need to pass in Lce and Lsee as well - or find out how to get it just using Lm
+    #return (-Vfact(q)*Brel*( (get_Flen(Lce) + Arel)/(get_Fcerel(Lsee)/q+Arel) -1 ))
+    return get_Vfact(q)*sloplin*(get_Fcerel(Lsee)/q + get_P2())
 
 def get_P1():
     """
@@ -64,10 +68,12 @@ def get_P1():
     """
 
 
+
 def get_P2():
     """
     Need: Flen, Fasympt (Const)
     """
+    return -get_Flen(Lce)*Fasympt
 
 
 def get_P3():
