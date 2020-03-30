@@ -105,4 +105,7 @@ ode_handle = lambda t, x: qdot(t, x)
 obj = solve_ivp(ode_handle, [0, 2], [1], rtol=1e-5, atol=1e-6)
 # [0, 2] is the time that we're integrating, [0] is our initial condition y0.
 plt.plot(obj.t, obj.y[0])
+plt.title("Active State vs. Time")
+plt.ylabel("Active State (q)")
+plt.xlabel("Time (t)")
 plt.show()
