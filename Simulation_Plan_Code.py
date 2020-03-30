@@ -13,7 +13,7 @@ Arel = 0.41
 Brel = 5.2
 stim_index = 0
 
-# This is temporary, eventually we'll need to design a sophisticated stim profile. 
+# This is temporary, eventually we'll need to design a sophisticated stim profile.
 stim_profile = np.zeros(500)
 
 
@@ -36,7 +36,7 @@ def force_SEE(Lsee):
         return 0
 
 
-def force_length_CE(Lce):
+def get_Flen(Lce):
     wtemp = np.power(44.2, 2)
     c = 1/wtemp
     eqtemp1 = Lce/0.082
@@ -48,24 +48,38 @@ def Vfact(q):
     return np.minimum((10/3)*q , 1)
 
 
-def Fcerel(Lsee,Lslack):
-    return force_SEE(0)/1538 #Need to pass Lsee, WIP
+def get_Fcerel(Lsee):
+    return force_SEE(0)/Fmax #Need to pass Lsee, WIP
 
 
-# def Vcerel(q,Lm, length_CE):
-#     Lce = length_CE()
-#     if (Fcerel(Lsee,Lslack)/q)<force_length_CE(Lce):
-#         return -Vfact(q)*5.2*((force_length_CE(Lce)+0.41)/((Fcerel(Lsee,Lslack)/q)+0.41-1)
-#     else:
-#         P2=force_length_CE(Lce)*1.5
-#         eqtemp1 = np.power((force_length_CE(Lce)+P2),2)
-#         P1=(Vfact()*5.2*eqtemp1)/((force_length_CE(Lce)/0.41)/2)S
-#         P3=P1/(force_length_CE(Lce)+P2)
-#         eq2temp=np.sqrt(P1/(Vfact()*200),2)
-#         if (Fcerel()/q)<(eq2temp-2):
-#             return (-P1/(Fcerel()/q)+P2)+P3
-#         else:
-#             return (Vfact()*200*((Fcerel/q)+P2)+P3+2*np.sqrt(P1*Vfact()*200,2)
+def Vcerel(q, Lm):
+    """
+    Need: P1, P2, P3, FceRel, q, Vfact,
+    """
+
+
+def get_P1():
+    """
+    Need: Vfact, Flen, P2,
+    """
+
+
+def get_P2():
+    """
+    Need: Flen, Fasympt (Const)
+    """
+
+
+def get_P3():
+    """
+    Need: P1, P2, Flen
+    """
+
+
+def get_Vfact():
+    """
+    Need: q
+    """
 
 
 def Lm():
@@ -77,6 +91,9 @@ def Lm():
 def length_CE():
     # Alison add regression model here.
     return 0
+
+def length_SEE(Lm,Lce):
+    return Lm - Lce
 
 
 # def get_moment(force):
