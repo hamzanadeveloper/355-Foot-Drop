@@ -1,4 +1,3 @@
-
 import operator
 
 import numpy as np
@@ -23,11 +22,11 @@ x_poly = polynomial_features.fit_transform(x)
 model = LinearRegression()
 model.fit(x_poly, y)
 y_poly_pred = model.predict(x_poly)
+test_X = [[0, 0, 0, 0, 0, 0]]
+print(model.predict(test_X))
 
 rmse = np.sqrt(mean_squared_error(y,y_poly_pred))
 r2 = r2_score(y,y_poly_pred)
-print(rmse)
-print(r2)
 
 plt.scatter(x, y, s=10)
 # sort the values of x before line plot
