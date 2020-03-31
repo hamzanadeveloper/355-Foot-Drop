@@ -1,6 +1,8 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from scipy.integrate import solve_ivp
+import math as m
+
 
 Fmax = 1528
 Lceopt = 0.082
@@ -14,6 +16,7 @@ Brel = 5.2
 stim_index = 0
 sloplin = 200
 Fasympt = 1.5
+slopfac = 2.0
 
 # This is temporary, eventually we'll need to design a sophisticated stim profile.
 stim_profile = np.zeros(500)
@@ -54,39 +57,46 @@ def get_Fcerel(Lsee):
     return force_SEE(0)/Fmax #Need to pass Lsee, WIP
 
 
-def Vcerel(q, Lm):
+def Vcerel(q, Lm, Lce):
     """
     Need: P1, P2, P3, FceRel, q, Vfact,
     """
-    #Need to pass in Lce and Lsee as well - or find out how to get it just using Lm
-    #return (-Vfact(q)*Brel*( (get_Flen(Lce) + Arel)/(get_Fcerel(Lsee)/q+Arel) -1 ))
-    return get_Vfact(q)*sloplin*(get_Fcerel(Lsee)/q + get_P2())
 
-def get_P1():
+    return get_Vfact(q) * sloplin * (get_Fcerel(length_SEE(Lm, Lce))/q + get_P2(Lce)) + get_P3(q, Lce) + \
+           2 * m.sqrt(get_P1() * get_Vfact(q) * sloplin)
+
+def get_P1(q,Lce):
     """
     Need: Vfact, Flen, P2,
     """
+    #added arguments : q, Lce
+    return (Vfact(q)*Brel*m.pow((get_Flen(Lce)+get_P2()), 2))/((get_Flen(Lce)+get_P2())/slopfac)
 
 
 
-def get_P2():
+def get_P2(Lce):
     """
     Need: Flen, Fasympt (Const)
     """
+    #added argument Lce
     return -get_Flen(Lce)*Fasympt
 
 
-def get_P3():
+def get_P3(q, Lce):
     """
     Need: P1, P2, Flen
     """
+    # added arguments : q, Lce
+    return get_P1(q, Lce)/(get_Flen(Lce)+get_P2(Lce))
 
-
-def get_Vfact():
+def get_Vfact(q):
     """
     Need: q
     """
-
+    if (q*(10/3)<1):
+        return q*(10/3)
+    else:
+        return 1
 
 def Lm():
     # ankleangle depends on moment, so need moment curve
