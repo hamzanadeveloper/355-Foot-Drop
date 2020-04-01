@@ -5,6 +5,7 @@ import math
 import pandas as pd
 
 from scipy import optimize
+from scipy.integrate import solve_ivp
 from sklearn.linear_model import LinearRegression
 from sklearn.metrics import mean_squared_error, r2_score
 from sklearn.preprocessing import PolynomialFeatures
@@ -77,14 +78,27 @@ def get_force_len(Lce):
     return np.maximum((c * np.power(temp, 2) - 2 * c * temp + c + 1), 0)
 
 
+def qdot(t, q):
+    ms = 0.001
+    t2 = 1/(65*ms)
+    t1 = (1/55*ms) - t2
+
+    stim = get_prediction(stim_control_model, t, 1)
+    return (stim-q) * (t1*stim+t2)
+
+
 gait_ankle = ankle_data.values[:, 0]
 ankle_angle = ankle_data.values[:, 1]
 
 gait_CE = Lce_data.values[:, 0]
 val_CE = [val * Lce_opt for val in Lce_data.values[:, 1]]
 
+stim_control_x = [66, 100]
+stim_control_y = [0.95, 0.95]
+
 ankle_model = get_regression(gait_ankle, ankle_angle, 5)
 length_CE_model = get_regression(gait_CE, val_CE, 5)
+stim_control_model = get_regression(stim_control_x, stim_control_y, 1)
 
 gait_per = np.linspace(66, 100, num=100)
 ankle_angles = []
@@ -92,6 +106,9 @@ lce_vals = []
 lm_vals = []
 fsee_vals = []
 f_len_vals = []
+P1 = []
+P3 = []
+vce_rel = []
 
 for i in gait_per:
     ankle_angles.append(get_prediction(ankle_model, i, 5))
@@ -106,8 +123,40 @@ for i, j in zip(lm_vals, lce_vals):
 for i in lce_vals:
     f_len_vals.append(get_force_len(i))
 
+ode_handle = lambda t, x: qdot(t, x)
+obj = solve_ivp(ode_handle, [66, 100], [0.5], t_eval=[*gait_per], rtol=1e-5, atol=1e-6)
+
 fce_rel = [force / Fmax for force in fsee_vals]
 P2 = [force * (-1.5) for force in f_len_vals]
+V_fact = [min((10/3)*q, 1) for q in obj.y[0]]
+
+for v, f, p in zip(V_fact, f_len_vals, P2):
+    Arel = 0.41
+    Brel = 5.2
+    slopfac = 2
+
+    num = v * Brel * np.power(f + p, 2)
+    den = (f + Arel)/ slopfac
+
+    P1.append(num/den)
+
+for p1, p2, f in zip(P1, P2, f_len_vals):
+    P3.append(p1 / (f + p2))
+
+
+for vf, fce, q, flen, p1, p2, p3 in zip(V_fact, fce_rel, obj.y[0], f_len_vals, P1, P2, P3):
+    if fce/q < flen:
+        num = flen + 0.41
+        den = fce/q + 0.41
+        vce_rel.append(-vf*5.2*((num/den) - 1))
+    else:
+        hyperbolic = -np.sqrt(p1/(vf*200)) - p2
+        if fce/q < hyperbolic:
+            den = fce/q + p2
+            vce_rel.append(-(p1/den) + p3)
+        else:
+            term = fce/q + p2
+            vce_rel.append(vf*200*term + p3 + 2 * np.sqrt(p1*vf*200))
 
 plt.subplot(211)
 plt.grid(True)
@@ -126,6 +175,20 @@ plt.ylabel("Force of SEE (N)")
 plt.xlabel("Gait Cycle (%)")
 plt.grid(True)
 plt.plot(gait_per, fsee_vals, color='green')
+plt.show()
+
+plt.plot(obj.t, obj.y[0])
+plt.grid(True)
+plt.title("Active State vs. Time")
+plt.ylabel("Active State (q)")
+plt.xlabel("Time (t)")
+plt.show()
+
+plt.title("Velocity of CE relative over Gait Cycle")
+plt.ylabel("Velocity")
+plt.xlabel("Gait Cycle (%)")
+plt.grid(True)
+plt.plot(gait_per, vce_rel, color='red')
 plt.show()
 
 
