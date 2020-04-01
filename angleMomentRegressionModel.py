@@ -87,6 +87,21 @@ def qdot(t, q):
     return (stim-q) * (t1*stim+t2)
 
 
+def validate_qdot(t, q):
+    ms = 0.001
+    t2 = 1 / (65 * ms)
+    t1 = (1 / 55 * ms) - t2
+
+    if t < 75:
+        stim = get_prediction(val_model_1, t, 1)
+    elif t < 87:
+        stim = get_prediction(val_model_2, t, 1)
+    else:
+        stim = get_prediction(val_model_3, t, 1)
+
+    return (stim-q) * (t1*stim+t2)
+
+
 gait_ankle = ankle_data.values[:, 0]
 ankle_angle = ankle_data.values[:, 1]
 
@@ -95,6 +110,14 @@ val_CE = [val * Lce_opt for val in Lce_data.values[:, 1]]
 
 stim_control_x = [66, 100]
 stim_control_y = [0.95, 0.95]
+
+# validate_1 = [[66, 75], [0.5, 0.75]]
+# validate_2 = [[75, 87], [0.75, 0.3]]
+# validate_3 = [[87, 100], [0.3, 0.8]]
+#
+# val_model_1 = get_regression(validate_1[0], validate_1[1], 1)
+# val_model_2 = get_regression(validate_2[0], validate_2[1], 1)
+# val_model_3 = get_regression(validate_3[0], validate_3[1], 1)
 
 ankle_model = get_regression(gait_ankle, ankle_angle, 5)
 length_CE_model = get_regression(gait_CE, val_CE, 5)
@@ -124,7 +147,10 @@ for i in lce_vals:
     f_len_vals.append(get_force_len(i))
 
 ode_handle = lambda t, x: qdot(t, x)
+validate_func = lambda t, x: validate_qdot(t, x)
+
 obj = solve_ivp(ode_handle, [66, 100], [0.5], t_eval=[*gait_per], rtol=1e-5, atol=1e-6)
+# obj = solve_ivp(validate_func, [66, 100], [0.5], t_eval=[*gait_per], rtol=1e-5, atol=1e-6)
 
 fce_rel = [force / Fmax for force in fsee_vals]
 P2 = [force * (-1.5) for force in f_len_vals]
@@ -185,7 +211,7 @@ plt.xlabel("Time (t)")
 plt.show()
 
 plt.title("Velocity of CE relative over Gait Cycle")
-plt.ylabel("Velocity")
+plt.ylabel("Velocity (mm/s)")
 plt.xlabel("Gait Cycle (%)")
 plt.grid(True)
 plt.plot(gait_per, vce_rel, color='red')
