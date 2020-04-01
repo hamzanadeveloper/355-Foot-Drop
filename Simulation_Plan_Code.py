@@ -1,8 +1,8 @@
 import numpy as np
 import matplotlib.pyplot as plt
+import math as math
 from scipy.integrate import solve_ivp
 import math as m
-
 
 Fmax = 1528
 Lceopt = 0.082
@@ -18,6 +18,9 @@ sloplin = 200
 Fasympt = 1.5
 slopfac = 2.0
 
+angle_0 = -15
+length_CE0 = 0.04
+
 # This is temporary, eventually we'll need to design a sophisticated stim profile.
 stim_profile = np.zeros(500)
 
@@ -32,9 +35,9 @@ def qdot(stim, q):
     return (stim_profile[stim_index]-q) * (t1*stim_profile[stim_index]+t2)
 
 
-def force_SEE(Lsee):
-    if Lsee > Lslack:
-        num = Lm() - length_CE() - Lslack # LCE comes from regression model (WIP)
+def get_force_SEE(Lm, Lce):
+    if Lm - Lce > Lslack:
+        num = Lm - Lce - Lslack # LCE comes from regression model (WIP)
         den = Umax * Lslack
         return Fmax * (np.power(num / den, 2))
     else:
@@ -98,10 +101,10 @@ def get_Vfact(q):
     else:
         return 1
 
-def Lm():
+
+def get_Lm(theta):
     # ankleangle depends on moment, so need moment curve
-    ankleangle = 1
-    return 0.464+(-0.037*ankleangle)
+    return 0.464+(-0.037*math.radians(theta))
 
 
 def length_CE():
@@ -125,3 +128,10 @@ plt.title("Active State vs. Time")
 plt.ylabel("Active State (q)")
 plt.xlabel("Time (t)")
 plt.show()
+
+calculate_Lm = get_Lm(angle_0)
+print(calculate_Lm)
+calculate_Fsee = get_force_SEE(calculate_Lm, length_CE0)
+
+print("Fsee: ", calculate_Fsee)
+
